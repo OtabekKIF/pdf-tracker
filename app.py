@@ -10,8 +10,8 @@ load_dotenv()
 app = Flask(__name__)
 
 # .env orqali token va chat_id o'qish
-BOT_TOKEN = os.getenv("7827647103:AAFH_RrWku-ig4kiV_Qu24Ch4DB-SQCLlNo")
-CHAT_ID = os.getenv("7579513109")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
 def send_to_telegram(message: str):
     """Telegramga xabar yuboradi."""
