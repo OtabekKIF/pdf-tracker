@@ -1,133 +1,140 @@
 from flask import Flask, request, send_file, jsonify, render_template
-from datetime import datetime
-import requests
-import os
-from dotenv import load_dotenv
+    from flask_cors import CORS
+    from datetime import datetime
+    import requests
+    import os
+    from dotenv import load_dotenv
 
-load_dotenv()
+    load_dotenv()
 
-# Flask ilovasini loyiha ildizidagi index.html va tracker.js uchun sozlash
-app = Flask(__name__, static_folder='.', template_folder='.')
+    app = Flask(__name__, static_folder='.', template_folder='.')
+    CORS(app)
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
+    BOT_TOKEN = os.getenv("BOT_TOKEN")
+    CHAT_ID = os.getenv("CHAT_ID")
 
-def send_to_telegram(message: str):
-    if not BOT_TOKEN or not CHAT_ID:
-        print("❗ BOT_TOKEN yoki CHAT_ID aniqlanmadi.")
-        return
+    def send_to_telegram(message: str):
+        if not BOT_TOKEN or not CHAT_ID:
+            print("❗ BOT_TOKEN yoki CHAT_ID aniqlanmadi.")
+            return
 
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    data = {
-        "chat_id": CHAT_ID,
-        "text": message,
-        "parse_mode": "Markdown"
-    }
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        data = {
+            "chat_id": CHAT_ID,
+            "text": message,
+            "parse_mode": "Markdown"
+        }
 
-    try:
-        response = requests.post(url, data=data)
-        if response.status_code != 200:
-            print("❗ Telegramga yuborishda xatolik:", response.text)
-    except Exception as e:
-        print("❗ Telegramga yuborishda xatolik:", e)
+        try:
+            response = requests.post(url, data=data)
+            if response.status_code != 200:
+                print("❗ Telegramga yuborishda xatolik:", response.text)
+        except Exception as e:
+            print("❗ Telegramga yuborishda xatolik:", e)
 
-@app.route('/track.png')
-def tracker():
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    user_agent = request.headers.get('User-Agent')
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    @app.route('/track.png')
+    def tracker():
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        user_agent = request.headers.get('User-Agent')
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    message = (
-        "📥 *PDF ochildi!*\n"
-        f"🕓 Sana: {now}\n"
-        f"🌍 IP: `{ip}`\n"
-        f"🧭 User-Agent: `{user_agent}`"
-    )
+        message = (
+            "📥 *PDF ochildi!*\n"
+            f"🕓 Sana: {now}\n"
+            f"🌍 IP: `{ip}`\n"
+            f"🧭 User-Agent: `{user_agent}`"
+        )
 
-    print(message)
-    try:
-        with open("logs.txt", "a", encoding="utf-8") as log:
-            log.write(f"{now} | {ip} | {user_agent}\n")
-    except Exception as e:
-        print("❗ Log faylga yozishda xatolik:", e)
+        print(message)
+        try:
+            with open("logs.txt", "a", encoding="utf-8") as log:
+                log.write(f"{now} | {ip} | {user_agent}\n")
+        except Exception as e:
+            print("❗ Log faylga yozishda xatolik:", e)
 
-    send_to_telegram(message)
-    return send_file("pixel.png", mimetype="image/png")
+        send_to_telegram(message)
+        return send_file("pixel.png", mimetype="image/png")
 
-@app.route('/track_data', methods=['POST'])
-def track_data():
-    data = request.get_json()
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    @app.route('/track_data', methods=['POST'])
+    def track_data():
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({"error": "No JSON data provided"}), 400
+        except Exception as e:
+            print("JSON parse error:", e)
+            return jsonify({"error": "Invalid JSON"}), 400
 
-    message = (
-        "📊 *Qurilma ma'lumotlari keldi!*\n"
-        f"🕓 Sana: {now}\n"
-        f"🌍 IP: `{ip}`\n"
-        f"🆔 Visitor ID: `{data.get('visitorId', 'unknown')}`\n"
-        f"🖥️ Ekran: `{data.get('screen', 'unknown')}`\n"
-        f"🎨 Rang chuqurligi: `{data.get('colorDepth', 'unknown')}`\n"
-        f"🌐 Til: `{data.get('language', 'unknown')}`\n"
-        f"💻 Platforma: `{data.get('platform', 'unknown')}`\n"
-        f"🧭 User-Agent: `{data.get('userAgent', 'unknown')}`\n"
-        f"⚙️ CPU: `{data.get('cpu', 'unknown')}`\n"
-        f"🧠 RAM: `{data.get('ram', 'unknown')}`\n"
-        f"⏰ Vaqt zonasi: `{data.get('timezone', 'unknown')}`\n"
-        f"🕒 Mahliy vaqt: `{data.get('localTime', 'unknown')}`\n"
-        f"🚫 Do Not Track: `{data.get('doNotTrack', 'unknown')}`\n"
-        f"🔋 Batareya: `{data.get('battery', 'unknown')}`\n"
-        f"📹 Media: `{data.get('media', 'unknown')}`\n"
-        f"🌐 Tarmoq turi: `{data.get('networkType', 'unknown')}`\n"
-        f"📱 Qurilma turi: `{data.get('deviceType', 'unknown')}`\n"
-        f"🏭 Ishlab chiqaruvchi: `{data.get('manufacturer', 'unknown')}`\n"
-        f"🖥️ OS versiyasi: `{data.get('osVersion', 'unknown')}`\n"
-        f"🧠 Umumiy xotira: `{data.get('memoryTotal', 'unknown')}`\n"
-        f"🧠 Ishlatilgan xotira: `{data.get('memoryUsed', 'unknown')}`\n"
-        f"⚙️ CPU yuki: `{data.get('cpuLoad', 'unknown')}`\n"
-        f"📱 Qurilma modeli: `{data.get('deviceModel', 'unknown')}`"
-    )
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    print(message)
-    try:
-        with open("logs.txt", "a", encoding="utf-8") as log:
-            log.write(
-                f"{now} | {ip} | Visitor ID: {data.get('visitorId', 'unknown')} | "
-                f"Screen: {data.get('screen', 'unknown')} | "
-                f"Color Depth: {data.get('colorDepth', 'unknown')} | "
-                f"Language: {data.get('language', 'unknown')} | "
-                f"Platform: {data.get('platform', 'unknown')} | "
-                f"User-Agent: {data.get('userAgent', 'unknown')} | "
-                f"CPU: {data.get('cpu', 'unknown')} | "
-                f"RAM: {data.get('ram', 'unknown')} | "
-                f"Timezone: {data.get('timezone', 'unknown')} | "
-                f"Local Time: {data.get('localTime', 'unknown')} | "
-                f"Do Not Track: {data.get('doNotTrack', 'unknown')} | "
-                f"Battery: {data.get('battery', 'unknown')} | "
-                f"Media: {data.get('media', 'unknown')} | "
-                f"Network Type: {data.get('networkType', 'unknown')} | "
-                f"Device Type: {data.get('deviceType', 'unknown')} | "
-                f"Manufacturer: {data.get('manufacturer', 'unknown')} | "
-                f"OS Version: {data.get('osVersion', 'unknown')} | "
-                f"Memory Total: {data.get('memoryTotal', 'unknown')} | "
-                f"Memory Used: {data.get('memoryUsed', 'unknown')} | "
-                f"CPU Load: {data.get('cpuLoad', 'unknown')} | "
-                f"Device Model: {data.get('deviceModel', 'unknown')}\n"
-            )
-    except Exception as e:
-        print("❗ Log faylga yozishda xatolik:", e)
+        message = (
+            "📊 *Qurilma ma'lumotlari keldi!*\n"
+            f"🕓 Sana: {now}\n"
+            f"🌍 IP: `{ip}`\n"
+            f"🆔 Visitor ID: `{data.get('visitorId', 'unknown')}`\n"
+            f"🖥️ Ekran: `{data.get('screen', 'unknown')}`\n"
+            f"🎨 Rang chuqurligi: `{data.get('colorDepth', 'unknown')}`\n"
+            f"🌐 Til: `{data.get('language', 'unknown')}`\n"
+            f"💻 Platforma: `{data.get('platform', 'unknown')}`\n"
+            f"🧭 User-Agent: `{data.get('userAgent', 'unknown')}`\n"
+            f"⚙️ CPU: `{data.get('cpu', 'unknown')}`\n"
+            f"🧠 RAM: `{data.get('ram', 'unknown')}`\n"
+            f"⏰ Vaqt zonasi: `{data.get('timezone', 'unknown')}`\n"
+            f"🕒 Mahalliy vaqt: `{data.get('localTime', 'unknown')}`\n"
+            f"🚫 Do Not Track: `{data.get('doNotTrack', 'unknown')}`\n"
+            f"🔋 Batareya: `{data.get('battery', 'unknown')}`\n"
+            f"📹 Media: `{data.get('media', 'unknown')}`\n"
+            f"🌐 Tarmoq turi: `{data.get('networkType', 'unknown')}`\n"
+            f"📱 Qurilma turi: `{data.get('deviceType', 'unknown')}`\n"
+            f"🏭 Ishlab chiqaruvchi: `{data.get('manufacturer', 'unknown')}`\n"
+            f"🖥️ OS versiyasi: `{data.get('osVersion', 'unknown')}`\n"
+            f"🧠 Umumiy xotira: `{data.get('memoryTotal', 'unknown')}`\n"
+            f"🧠 Ishlatilgan xotira: `{data.get('memoryUsed', 'unknown')}`\n"
+            f"⚙️ CPU yuki: `{data.get('cpuLoad', 'unknown')}`\n"
+            f"📱 Qurilma modeli: `{data.get('deviceModel', 'unknown')}`"
+        )
 
-    send_to_telegram(message)
-    return jsonify({"status": "success"})
+        print(message)
+        try:
+            with open("logs.txt", "a", encoding="utf-8") as log:
+                log.write(
+                    f"{now} | {ip} | Visitor ID: {data.get('visitorId', 'unknown')} | "
+                    f"Screen: {data.get('screen', 'unknown')} | "
+                    f"Color Depth: {data.get('colorDepth', 'unknown')} | "
+                    f"Language: {data.get('language', 'unknown')} | "
+                    f"Platform: {data.get('platform', 'unknown')} | "
+                    f"User-Agent: {data.get('userAgent', 'unknown')} | "
+                    f"CPU: {data.get('cpu', 'unknown')} | "
+                    f"RAM: {data.get('ram', 'unknown')} | "
+                    f"Timezone: {data.get('timezone', 'unknown')} | "
+                    f"Local Time: {data.get('localTime', 'unknown')} | "
+                    f"Do Not Track: {data.get('doNotTrack', 'unknown')} | "
+                    f"Battery: {data.get('battery', 'unknown')} | "
+                    f"Media: {data.get('media', 'unknown')} | "
+                    f"Network Type: {data.get('networkType', 'unknown')} | "
+                    f"Device Type: {data.get('deviceType', 'unknown')} | "
+                    f"Manufacturer: {data.get('manufacturer', 'unknown')} | "
+                    f"OS Version: {data.get('osVersion', 'unknown')} | "
+                    f"Memory Total: {data.get('memoryTotal', 'unknown')} | "
+                    f"Memory Used: {data.get('memoryUsed', 'unknown')} | "
+                    f"CPU Load: {data.get('cpuLoad', 'unknown')} | "
+                    f"Device Model: {data.get('deviceModel', 'unknown')}\n"
+                )
+        except Exception as e:
+            print("❗ Log faylga yozishda xatolik:", e)
 
-@app.route('/')
-def home():
-    return render_template("index.html") if os.path.exists("index.html") else "✅ PDF Tracker Flask server ishlayapti."
+        send_to_telegram(message)
+        return jsonify({"status": "success"})
 
-# tracker.js faylini loyiha ildizidan yuborish
-@app.route('/tracker.js')
-def serve_tracker():
-    return send_file("tracker.js", mimetype="application/javascript")
+    @app.route('/')
+    def home():
+        return render_template("index.html") if os.path.exists("index.html") else "✅ PDF Tracker Flask server ishlayapti."
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    @app.route('/tracker.js')
+    def serve_tracker():
+        return send_file("tracker.js", mimetype="application/javascript")
+
+    if __name__ == "__main__":
+        port = int(os.environ.get("PORT", 10000))
+        app.run(host="0.0.0.0", port=port)
