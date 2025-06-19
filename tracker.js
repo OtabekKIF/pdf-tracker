@@ -13,8 +13,7 @@ async function collectDeviceInfo() {
     try {
         if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
             const devices = await navigator.mediaDevices.enumerateDevices();
-            const deviceTypes = devices.map(device => device.kind).join(", ");
-            mediaDevices = deviceTypes || "none";
+            mediaDevices = devices.map(device => device.kind).join(", ") || "none";
         }
     } catch (e) {
         console.log("Media devices error:", e);
@@ -36,20 +35,18 @@ async function collectDeviceInfo() {
         media: mediaDevices,
         networkType: navigator.connection ? navigator.connection.effectiveType : "unknown",
         deviceType: navigator.connection ? navigator.connection.type : "unknown",
-        manufacturer: "unknown", // Qurilma ishlab chiqaruvchisini aniqlash qiyin
-        osVersion: "unknown", // OS versiyasini aniqlash uchun maxsus kutubxonalar kerak
-        memoryTotal: "unknown", // Umumiy xotirani aniqlash qiyin
-        memoryUsed: "unknown", // Ishlatilgan xotirani aniqlash qiyin
-        cpuLoad: "unknown", // CPU yukini aniqlash qiyin
-        deviceModel: "unknown" // Qurilma modelini aniqlash qiyin
+        manufacturer: "unknown",
+        osVersion: "unknown",
+        memoryTotal: "unknown",
+        memoryUsed: "unknown",
+        cpuLoad: "unknown",
+        deviceModel: "unknown"
     };
 
-    // Visitor ID ni saqlash
     localStorage.setItem("visitorId", data.visitorId);
 
-    // Serverga yuborish
     try {
-        await fetch("/track_data", {
+        await fetch("https://pdf-tracker-t4fc.onrender.com/track_data", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
@@ -59,5 +56,4 @@ async function collectDeviceInfo() {
     }
 }
 
-// Kod ishga tushganda ma'lumotlarni yig'ish
 document.addEventListener("DOMContentLoaded", collectDeviceInfo);
